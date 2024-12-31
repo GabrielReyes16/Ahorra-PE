@@ -1,6 +1,8 @@
+import 'package:AhorraPE/database/database_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart';
 import '../components/transaction_card_component.dart';
-import '../components/today_expenses_component.dart';
+import '../database/tables/gastoTable.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,55 +12,62 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  Database? db;
+  DatabaseHelper? dbHelper;
+  bool shouldRefresh = false; // Variable para controlar la actualización
+
   final TextEditingController amountController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  final TextEditingController dateController = TextEditingController(
-    text: "${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}",
-  );
+  final TextEditingController dateController = TextEditingController();
 
-  final List<String> categories = ['Comida', 'Transporte', 'Entretenimiento'];
+  @override
+  void initState() {
+    super.initState();
+    _initializeDatabase();
+  }
 
-  void _handleAdd() {
-    // Lógica para manejar el botón Agregar
-    print("Categoría seleccionada: ${categories[0]}");
-    print("Monto: ${amountController.text}");
-    print("Descripción: ${descriptionController.text}");
-    print("Fecha: ${dateController.text}");
-    // Aquí podrías agregar lógica para almacenar datos en la BD o lista.
+  Future<void> _initializeDatabase() async {
+    db = await openDatabase(
+      'app.db',
+      version: 1,
+      onCreate: (Database db, int version) async {
+        await GastoTable.createTable(db);
+      },
+    );
+    setState(() {}); 
+  }
+
+  void refreshList() {
+    setState(() {
+      shouldRefresh = !shouldRefresh;
+    });
   }
 
   @override
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: const Text('Home'),
-    ),
-    body: Column(
-      children: [
-        TransactionCard(
-          dropdownItems: categories,
-          amountController: amountController,
-          descriptionController: descriptionController,
-          dateController: dateController,
-          onAddPressed: _handleAdd,
-        ),
-        const SizedBox(height: 16), // Espacio entre el TransactionCard y el texto
-        const Text(
-          'GASTOS DEL DÍA',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 16), // Espacio después del texto
-        
-
-        const TodayExpenses(), // Asegúrate de importar este widget
-      ],
-    ),
-  );
-}
-
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Home'),
+      ),
+      body: db == null
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TransactionCard(
+                    db: db!,
+                    amountController: amountController,
+                    descriptionController: descriptionController,
+                    dateController: dateController,
+                    onAddPressed: () {
+                      refreshList(); // Actualiza la lista cuando se agrega una transacción
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+    );
+  }
 }

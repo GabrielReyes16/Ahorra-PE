@@ -1,27 +1,12 @@
-import 'dart:async';
+import 'package:AhorraPE/database/tables/gastoTable.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'migrations/createTablesGastos.dart';
-import 'seeders/gastosSeeder.dart';
 
 class DatabaseHelper {
-  static const _databaseName = "expense.db";
-  static const _databaseVersion = 1;
-
-  static const tableTipo = 'gasto_tipo';
-  static const tableCategoria = 'gasto_categoria';
-
-  // Columnas para la tabla 'gasto_tipo'
-  static const columnId = 'id';
-  static const columnNombre = 'nombre';
-
-  // Columnas para la tabla 'gasto_categoria'
-  static const columnCategoriaId = 'id';
-  static const columnCategoriaNombre = 'nombre';
-  static const columnCategoriaTipoId = 'id_tipo';
-
-  // Singleton y acceso a la base de datos
+  static final DatabaseHelper instance = DatabaseHelper._internal();
   static Database? _database;
+
+  DatabaseHelper._internal();
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -29,25 +14,29 @@ class DatabaseHelper {
     return _database!;
   }
 
-  _initDatabase() async {
-    String path = join(await getDatabasesPath(), _databaseName);
-    return await openDatabase(path, version: _databaseVersion, onCreate: _onCreate);
+  Future<Database> _initDatabase() async {
+    final databasePath = await getDatabasesPath();
+    final path = join(databasePath, 'app.db');
+    return openDatabase(
+      path,
+      version: 1,
+      onCreate: _createDatabase,
+      onUpgrade: _upgradeDatabase,
+    );
   }
 
-  _onCreate(Database db, int version) async {
-    MigrationHelper().createTablesGastos(db);
+  Future<void> _createDatabase(Database db, int version) async {
+    await GastoTable.createTable(db);
+
+    // Agrega más tablas aquí
   }
 
-  // Cargar los tipos de gasto desde la base de datos
-  Future<List<Map<String, dynamic>>> getTipos() async {
-    Database db = await database;
-    return await db.query(tableTipo);
+  Future<void> _upgradeDatabase(Database db, int oldVersion, int newVersion) async {
+    // Manejo de migraciones si es necesario
   }
 
-  // Cargar las categorías para un tipo de gasto específico
-  Future<List<Map<String, dynamic>>> getCategorias(int tipoId) async {
-    Database db = await database;
-    return await db.query(tableCategoria,
-        where: '$columnCategoriaTipoId = ?', whereArgs: [tipoId]);
+  Future close() async {
+    final db = await database;
+    db.close();
   }
 }

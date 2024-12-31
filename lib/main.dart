@@ -3,12 +3,9 @@ import 'components/bottom_navbar_component.dart';
 import 'pages/home_page.dart';
 import 'pages/gastos_page.dart';
 import 'pages/perfil_page.dart';
-import 'database/database_helper.dart'; // Asegúrate de importar el DatabaseHelper
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Asegúrate de que el entorno esté preparado
-  DatabaseHelper dbHelper = DatabaseHelper();
-  await dbHelper.database; // Inicializa la base de datos
   runApp(const MyApp());
 }
 
